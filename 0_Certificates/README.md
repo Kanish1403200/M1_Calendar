@@ -1,5 +1,5 @@
 # certificates
 * sololearn
-* Frist day github
+* Frist day github- screenshot
 * NDG linux unhatched
 * simplilearn
