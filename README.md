@@ -2,5 +2,5 @@
 
 
 #Badges
-*codiga- Static Analaysis
-![Quality]https://api.codiga.io/project/32455/status/svg
+* codiga- Static Analaysis
+![Quality] https://api.codiga.io/project/32455/status/svg
