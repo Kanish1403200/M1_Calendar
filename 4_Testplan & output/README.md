@@ -17,8 +17,13 @@ TEST CASE:-Test scenario	Test data
 
 
 Sl.no	EXPECTED RESULT
+
 1	User was registered successfully.
+
 3	Entered data  successfully.
+
 4	User can view – User can add note,month ,date,year and quit
+
 5	User can edit record if and when required by the date ,month and year.
+
 6	User successfully deleted the record after entering correct password.
