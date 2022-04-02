@@ -8,5 +8,5 @@
 
 
 * codiga- Static Analysis
-![codiga badge] https://api.codiga.io/project/32455/score/svg
+![Quality] https://api.codiga.io/project/32455/score/svg
 https://api.codiga.io/project/32455/status/svg
