@@ -1,0 +1,625 @@
+#include<stdio.h>
+#include<conio.h>
+#include<windows.h>
+int getkey();
+void display(int,int,int,int[]);
+void calendar(int,int);
+struct Date{
+    int dd;
+    int mm;
+    int yy;
+};
+struct Date date;
+
+struct Remainder{
+    int dd;
+    int mm;
+    char note[50];
+};
+struct Remainder R;
+char *month[]={"January","February","March","April","May","June","July","August","September","October","November","December"};
+char *week[]={"Mon","Tue","Wed","Thu","Fri","Sat","Sun"};
+void gb(int mon,int ye);
+COORD xy = {0, 0};
+
+void gotoxy (int x, int y)
+{
+        xy.X = x; xy.Y = y; // X and Y coordinates
+        SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), xy);
+}
+
+//This will set the forground color for printing in a console window.
+void SetColor(int ForgC)
+{
+     WORD wColor;
+     //We will need this handle to get the current background attribute
+     HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+     CONSOLE_SCREEN_BUFFER_INFO csbi;
+
+     //We use csbi for the wAttributes word.
+     if(GetConsoleScreenBufferInfo(hStdOut, &csbi))
+     {
+        //Mask out all but the background attribute, and add in the forgournd color
+          wColor = (csbi.wAttributes & 0xF0) + (ForgC & 0x0F);
+          SetConsoleTextAttribute(hStdOut, wColor);
+     }
+     return;
+}
+
+void ClearColor(){
+    SetColor(15);
+}
+
+void ClearConsoleToColors(int ForgC, int BackC)
+{
+     WORD wColor = ((BackC & 0x0F) << 4) + (ForgC & 0x0F);
+     //Get the handle to the current output buffer...
+     HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+     //This is used to reset the carat/cursor to the top left.
+     COORD coord = {0, 0};
+     //A return value... indicating how many chars were written
+     //   not used but we need to capture this since it will be
+     //   written anyway (passing NULL causes an access violation).
+     DWORD count;
+
+     //This is a structure containing all of the console info
+     // it is used here to find the size of the console.
+     CONSOLE_SCREEN_BUFFER_INFO csbi;
+     //Here we will set the current color
+     SetConsoleTextAttribute(hStdOut, wColor);
+     if(GetConsoleScreenBufferInfo(hStdOut, &csbi))
+     {
+          //This fills the buffer with a given character (in this case 32=space).
+          FillConsoleOutputCharacter(hStdOut, (TCHAR) 32, csbi.dwSize.X * csbi.dwSize.Y, coord, &count);
+
+          FillConsoleOutputAttribute(hStdOut, csbi.wAttributes, csbi.dwSize.X * csbi.dwSize.Y, coord, &count );
+          //This will set our cursor position for the next print statement.
+          SetConsoleCursorPosition(hStdOut, coord);
+     }
+     return;
+}
+
+void SetColorAndBackground(int ForgC, int BackC)
+{
+     WORD wColor = ((BackC & 0x0F) << 4) + (ForgC & 0x0F);;
+     SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), wColor);
+     return;
+}
+
+int check_leapYear(int year){ //checks whether the year passed is leap year or not
+    if(year % 400 == 0 || (year % 100!=0 && year % 4 ==0))
+       return 1;
+    return 0;
+}
+
+void increase_month(int *mm,  int *yy){ //increase the month by one
+    ++*mm;
+    if(*mm > 12){
+        ++*yy;
+        *mm = *mm - 12;
+    }
+}
+
+void decrease_month(int *mm,  int *yy){ //decrease the month by one
+    --*mm;
+    if(*mm < 1){
+        --*yy;
+        if(*yy<1600){
+            printf("No record available");
+            return;
+        }
+        *mm = *mm + 12;
+    }
+}
+
+
+int getNumberOfDays(int month,int year){ //returns the number of days in given month
+   switch(month){                          //and year
+      case 1 : return(31);
+      case 2 : if(check_leapYear(year)==1)
+		 return(29);
+	       else
+		 return(28);
+      case 3 : return(31);
+      case 4 : return(30);
+      case 5 : return(31);
+      case 6 : return(30);
+      case 7 : return(31);
+      case 8 : return(31);
+      case 9 : return(30);
+      case 10: return(31);
+      case 11: return(30);
+      case 12: return(31);
+      default: return(-1);
+   }
+}
+
+char *getName(int day){ //returns the name of the day
+   switch(day){
+      case 0 :return("Sunday");
+      case 1 :return("Monday");
+      case 2 :return("Tuesday");
+      case 3 :return("Wednesday");
+      case 4 :return("Thursday");
+      case 5 :return("Friday");
+      case 6 :return("Saturday");
+      default:return("Error in getName() module.Invalid argument passed");
+   }
+}
+
+void print_date(int mm, int yy){ //prints the name of month and year
+    printf("---------------------------\n");
+    gotoxy(25,6);
+    switch(mm){
+        case 1: printf("January"); break;
+        case 2: printf("February"); break;
+        case 3: printf("March"); break;
+        case 4: printf("April"); break;
+        case 5: printf("May"); break;
+        case 6: printf("June"); break;
+        case 7: printf("July"); break;
+        case 8: printf("August"); break;
+        case 9: printf("September"); break;
+        case 10: printf("October"); break;
+        case 11: printf("November"); break;
+        case 12: printf("December"); break;
+    }
+    printf(" , %d", yy);
+    gotoxy(20,7);
+    printf("---------------------------");
+}
+int getDayNumber(int day,int mon,int year){ //retuns the day number
+    int res = 0, t1, t2, y = year;
+    year = year - 1600;
+    while(year >= 100){
+        res = res + 5;
+        year = year - 100;
+    }
+    res = (res % 7);
+    t1 = ((year - 1) / 4);
+    t2 = (year-1)-t1;
+    t1 = (t1*2)+t2;
+    t1 = (t1%7);
+    res = res + t1;
+    res = res%7;
+    t2 = 0;
+    for(t1 = 1;t1 < mon; t1++){
+        t2 += getNumberOfDays(t1,y);
+    }
+    t2 = t2 + day;
+    t2 = t2 % 7;
+    res = res + t2;
+    res = res % 7;
+    if(y > 2000)
+        res = res + 1;
+    res = res % 7;
+    return res;
+}
+
+char *getDay(int dd,int mm,int yy){
+    int day;
+    if(!(mm>=1 && mm<=12)){
+        return("Invalid month value");
+    }
+    if(!(dd>=1 && dd<=getNumberOfDays(mm,yy))){
+        return("Invalid date");
+    }
+    if(yy>=1600){
+        day = getDayNumber(dd,mm,yy);
+        day = day%7;
+        return(getName(day));
+    }else{
+        return("Please give year more than 1600");
+    }
+}
+
+int checkNote(int dd, int mm){
+    FILE *fp;
+    fp = fopen("note.dat","rb");
+    if(fp == NULL){
+        printf("Error in Opening the file");
+    }
+    while(fread(&R,sizeof(R),1,fp) == 1){
+        if(R.dd == dd && R.mm == mm){
+            fclose(fp);
+            return 1;
+        }
+    }
+    fclose(fp);
+    return 0;
+}
+
+void printMonth(int mon,int year,int x,int y){ //prints the month with all days
+    int nod, day, cnt, d = 1, x1 = x;
+    if(!(mon>=1 && mon<=12)){
+        printf("INVALID MONTH");
+        getch();
+        return;
+    }
+    if(!(year>=1600)){
+        printf("INVALID YEAR");
+        getch();
+        return;
+    }
+    gotoxy(20,y);
+    print_date(mon,year);
+    y += 3;
+    gotoxy(x,y);
+    printf("S   M   T   W   T   F   S   ");
+    y++;
+    nod = getNumberOfDays(mon,year);
+    day = getDayNumber(d,mon,year);
+    switch(day){ //locates the starting day in calender
+        case 0 :
+            x=x;
+            cnt=1;
+            break;
+        case 1 :
+            x=x+4;
+            cnt=2;
+            break;
+        case 2 :
+            x=x+8;
+            cnt=3;
+            break;
+        case 3 :
+            x=x+12;
+            cnt=4;
+            break;
+        case 4 :
+            x=x+16;
+            cnt=5;
+            break;
+        case 5 :
+            x=x+20;
+            cnt=6;
+            break;
+        case 6 :
+            x=x+24;
+            cnt=7;
+            break;
+        default :
+            printf("INVALID DATA FROM THE getOddNumber()MODULE");
+            return;
+    }
+    gotoxy(x,y);
+    if(cnt == 1){
+        SetColor(12);
+    }
+    if(checkNote(d,mon)==1){
+            SetColorAndBackground(15,12);
+    }
+    printf("%02d",d);
+    SetColorAndBackground(15,1);
+    for(d=2;d<=nod;d++){
+        if(cnt%7==0){
+            y++;
+            cnt=0;
+            x=x1-4;
+        }
+        x = x+4;
+        cnt++;
+        gotoxy(x,y);
+        if(cnt==1){
+            SetColor(12);
+        }else{
+            ClearColor();
+        }
+        if(checkNote(d,mon)==1){
+            SetColorAndBackground(15,12);
+        }
+        printf("%02d",d);
+        SetColorAndBackground(15,1);
+    }
+    gotoxy(8, y+2);
+    SetColor(14);
+    printf("Press 'n'  to Next, Press 'p' to Previous and 'q' to Quit");
+    gotoxy(8,y+3);
+    printf("Red Background indicates the NOTE, Press 's' to see note: ");
+    ClearColor();
+}
+
+void AddNote(){
+    FILE *fp;
+    fp = fopen("note.dat","ab+");
+    system("cls");
+    gotoxy(5,7);
+    printf("Enter the date(DD/MM): ");
+    scanf("%d%d",&R.dd, &R.mm);
+    gotoxy(5,8);
+    printf("Enter the Note(50 character max): ");
+    fflush(stdin);
+    scanf("%[^\n]",R.note);
+    if(fwrite(&R,sizeof(R),1,fp)){
+        gotoxy(5,12);
+        puts("Note is saved sucessfully");
+        fclose(fp);
+    }else{
+        gotoxy(5,12);
+        SetColor(12);
+        puts("\aFail to save!!\a");
+        ClearColor();
+    }
+    gotoxy(5,15);
+    printf("Press any key............");
+    getch();
+    fclose(fp);
+}
+
+void showNote(int mm){
+    FILE *fp;
+    int i = 0, isFound = 0;
+    system("cls");
+    fp = fopen("note.dat","rb");
+    if(fp == NULL){
+        printf("Error in opening the file");
+    }
+    while(fread(&R,sizeof(R),1,fp) == 1){
+        if(R.mm == mm){
+            gotoxy(10,5+i);
+            printf("Note %d Day = %d: %s", i+1, R.dd,  R.note);
+            isFound = 1;
+            i++;
+        }
+    }
+    if(isFound == 0){
+        gotoxy(10,5);
+        printf("This Month contains no note");
+    }
+    gotoxy(10,7+i);
+    printf("Press any key to back.......");
+    getch();
+
+}
+
+int main(){
+    ClearConsoleToColors(15, 1);
+    SetConsoleTitle("Calender Project - LEARNPROGRAMO");
+    int choice;
+    while(1){
+        system("cls");
+        printf("\t\t Learnprogramo - Programming made simple\n");
+        printf("1. Find Out the Day\n");
+        printf("2. Print all the day of month\n");
+        printf("3. Add Note\n");
+        printf("4. QUIT\n");
+        printf("ENTER YOUR CHOICE : ");
+        scanf("%d",&choice);
+        system("cls");
+        switch(choice){
+            case 2:
+                printf("Enter date (DD MM YYYY) : ");
+                scanf("%d %d %d",&date.dd,&date.mm,&date.yy);
+                printf("Day is : %s",getDay(date.dd,date.mm,date.yy));
+                printf("\nPress any key to continue......");
+                getch();
+                break;
+            case 1 :
+                printf("Enter month and year (MM YYYY) : ");
+                scanf("%d %d",&date.mm,&date.yy);
+                system("cls");
+                gb(date.mm,date.yy);
+
+                break;
+            case 3:
+            	AddNote();
+				break;
+
+
+            case 4 :
+                exit(0);
+        }
+    }
+    return 0;
+}
+void gb(int mon,int ye)
+{
+   int n_month=mon,n_yr=ye,ch;
+    enteryear:
+    while(1)
+    {
+
+        if(n_yr<1945)
+        {
+            //If year less than 1945
+            printf("\n\t Please enter year above 1945\n");
+            continue;
+        }
+        else
+        {
+            //If year greater than equal to 1945
+            calendar(n_yr,n_month);
+        }
+        while(1)
+        {
+        gotoxy(20,20);printf("(*) Use LEFT, RIGHT, UP and DOWN arrow.");
+        gotoxy(20,22);printf("(*) Press P to go to particular year and month.");
+        gotoxy(20,24);printf("(*) Press ESC to Exit.");
+        ch=getkey();
+        switch(ch)
+        {
+        case 5: //-------- DOWN ARROW -----------
+               //Increasing month
+                if(n_month==12)
+                {
+                    //Jump to next year if month is december
+                     n_month=1;
+                     n_yr++;
+                }
+                else
+                {
+                    n_month++;
+                }
+                calendar(n_yr,n_month);
+                break;
+        case 6: //-------- RIGHT ARROW ----------
+            //Increasing Year
+                n_yr++;
+                calendar(n_yr,n_month);
+                break;
+        case 7: //------- UP ARROW -------------
+            // Decreasing Month
+                if(n_month==1)
+                {
+                    // Jump to previous year if month is january
+                    n_yr--;
+                    n_month=12;
+                }
+                else
+                    n_month--;
+                calendar(n_yr,n_month);
+                break;
+        case 8: //-------- LEFT ARROW ----------
+            //Decreasing year
+                if(n_yr==1945)
+                {
+                    //If year is 1945 and we click left arrow than
+                  gotoxy(15,2);printf("Year below 1945 not available");
+                }
+                else
+                {
+                    n_yr--;
+                    calendar(n_yr,n_month);
+                }
+
+                break;
+        case 9: //--------- ESC KEY ------------
+            //Exit program
+                system("cls");
+                gotoxy(50,14);printf("Exiting program.\n\n\n\n\n");
+                exit(0);
+        case 10://---------- p KEY ------------
+            //Go to particular year and month
+                system("cls");
+                goto enteryear;
+        }
+        }
+        break;
+
+    }
+    getch();
+}
+void display(int n_yr,int n_month,int t_days,int days[])
+{
+    int i,j,pos;
+    SetColor(12); //Color red
+    gotoxy(56,6);printf("%s %d",month[n_month-1],n_yr); //Heading year and month dispalying
+    for(i=0,pos=30;i<7;i++,pos+=10)
+    {
+         if(i==6)
+            SetColor(9); //Sunday color blue
+         else
+            SetColor(10);  //Others day color green
+        gotoxy(pos,8);printf("%s",week[i]);
+    }
+
+    SetColor(15); //setting the color white
+
+   t_days++; //incrementing the tdays by 1
+    if(t_days==0 || t_days==7)
+        pos=91; //if tdays is 0 or 7, position is sunday
+    if(t_days==1)
+        pos=31; //if tdays is 1, position is monday
+    if(t_days==2)
+        pos=41;  //if tdays is 2, position is tuesday
+    if(t_days==3)
+        pos=51;  //if tdays is 3, position is wednesday
+    if(t_days==4)
+        pos=61;  //if tdays is 4, position is thursday
+    if(t_days==5)
+        pos=71;  //if tdays is 5, position is friday
+    if(t_days==6)
+        pos=81;  //if tdays is 6, position is saturday
+
+    for(i=0,j=10;i<days[n_month-1];i++,pos+=10)
+    {
+        if(pos==91)
+            SetColor(8); //Changing color to dark grey for sunday
+        else
+            SetColor(7); //Changing color to white for all days
+
+        gotoxy(pos,j);printf("%d",i+1);
+        if(pos==91)
+        {
+            pos=21; //Moving position to monday
+            j++;  //Increasing j by 10 if position is sunday
+        }
+    }
+
+    SetColor(5); //Changing color to purple
+
+    //Drawing horizontal line
+    for(i=22;i<102;i++)
+    {
+        gotoxy(i,4);printf("%c",196);
+        gotoxy(i,17);printf("%c",196);
+    }
+
+    //Drawing all the corner of the rectangle
+    gotoxy(21,4);printf("%c",218);
+    gotoxy(102,4);printf("%c",191);
+    gotoxy(21,17);printf("%c",192);
+    gotoxy(102,17);printf("%c",217);
+
+    //Drawing vertical line
+    for(i=5;i<17;i++)
+    {
+        gotoxy(21,i);printf("%c",179);
+        gotoxy(102,i);printf("%c",179);
+    }
+
+    SetColor(11); //Changing color to aqua
+
+    //Drawing left and the right navigation symbol
+    gotoxy(24,11);printf("%c",174);
+    gotoxy(98,11);printf("%c",175);
+
+}
+
+//==============  ARROW KEY ===============
+int getkey()
+{
+    int ch;
+    ch=getch();
+     if(ch==0)
+    {
+        printf("zero");
+        ch=getch();
+
+        return ch;
+    }
+    return ch;
+}
+
+//============ Calculating ====================
+void calendar(int n_yr,int n_month)
+{
+    int days[12]={31,28,31,30,31,30,31,31,30,31,30,31};
+    int t_days=0,z,myear;
+    system("cls");
+    myear=n_yr-1; //Decreasing year by 1
+            if(myear>=1945)
+            {
+                for(z=1945;z<=myear;z++)
+                {
+                    if(z%4==0) //If the year is a leap year than total no of days is 366
+                        t_days=t_days+366;  //counting all the days till nyr - 1
+                    else //If the year is a leap year than total no of days is 365
+                        t_days=t_days+365;  //counting all the days till nyr - 1
+                }
+            }
+
+            if(n_yr%4==0)
+                days[1]=29; //changing value in days array from 28 to 29 since leap year
+            else
+                days[1]=28; //changing value in days array from 29 to 28 since not a leap year
+
+            for(z=0;z<(n_month-1);z++)
+            {
+
+                t_days=t_days+days[z]; //Adding nmonth-1 days to tdays
+            }
+
+            t_days=t_days%7; //Finding the remainder of tdays so it can calculate the position to display
+            display(n_yr,n_month,t_days,days); //Passing the value to display
+}
